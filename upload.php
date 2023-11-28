@@ -47,13 +47,13 @@ if (isset($_POST['stat_id'])) {
         $fileSize = $_FILES['image']['size'];
         $fileTmpName = $_FILES['image']['tmp_name']; // Le nom temporaire du fichier
 
-        $uploadDir = "/uploads/vignettes/"; // Le nom du dossier où seront stockées les images
+        $uploadDir = "uploads/vignettes/"; // Le nom du dossier où seront stockées les images
         !is_dir($uploadDir) ? mkdir($uploadDir) : null;
         $newFileName = uniqid() . ".webp"; // Le nouveau nom du fichier
         if (move_uploaded_file($fileTmpName, $uploadDir . $newFileName)) {
             $stat_data['id'] = $stat_id;
-            $stat_data['image'] = "/uploads/vignettes/" . $newFileName;
-            $stat_data['location'] = "/uploads/vignettes/" . $newFileName;
+            $stat_data['image'] = "./uploads/vignettes/" . $newFileName;
+            $stat_data['location'] = "./uploads/vignettes/" . $newFileName;
             $json_response = json_encode($stat_data);
         } else {
             // Il y a eu une erreur lors du déplacement du fichier
@@ -68,7 +68,7 @@ if (isset($_POST['stat_id'])) {
         $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
         $max_file_size = 104857600;
 
-        $uploadDir = "/uploads/videos/";
+        $uploadDir = "uploads/videos/";
         !is_dir($uploadDir) ? mkdir($uploadDir) : null;
         $newFileName = uniqid() . "." . $fileExt;
 
@@ -80,8 +80,8 @@ if (isset($_POST['stat_id'])) {
             // Le fichier est de taille valide
             if (move_uploaded_file($fileTmpName, $uploadDir . $newFileName)) {
                 $stat_data['id'] = $stat_id;
-                $stat_data['video'] = "/uploads/videos/". $newFileName;
-                $stat_data['location'] = "/uploads/videos/". $newFileName;
+                $stat_data['video'] = "./uploads/videos/". $newFileName;
+                $stat_data['location'] = "./uploads/videos/". $newFileName;
                 $json_response = json_encode($stat_data);
             } else {
                 // Il y a eu une erreur lors du déplacement du fichier
@@ -92,7 +92,7 @@ if (isset($_POST['stat_id'])) {
 }
 if (isset($_POST['submit'])) {
     $stat_id = intval($_POST["stat_id"]);
-    $user_id = $_SESSION['id'];
+    $user_id = 1;
     if (isset($_POST['title']) && !empty(trim($_POST['title']))) {
         $cookie_data['title'] = trim($_POST['title']);
     }

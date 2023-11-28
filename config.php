@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$db   = 'test';
+$db   = 'ochovid';
 $user = 'root';
 $pass = '';
 try {

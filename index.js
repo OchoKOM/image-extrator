@@ -5,6 +5,7 @@ let form_v = document.getElementById("main-form"),
   imgPreview = document.getElementById("img-preview"),
   videoPreview = document.getElementById("video-preview"),
   play_btn = document.getElementById("play-btn"),
+  pic_gen_btn = document.getElementById("gen-image"),
   uploading = document.querySelector(".uploading"),
   sendStat = document.getElementById("send-stat"),
   percent = document.getElementById("percent"),
@@ -18,10 +19,15 @@ let form_v = document.getElementById("main-form"),
 play_btn.addEventListener("click", () => {
   if (videoPreview.src !== "") {
     play_btn.checked ? videoPreview.play() : videoPreview.pause();
+  }else{
+    let message = "Vous devez d'abord charger une vidéo pour la lire.";
+    openMessage("warning",  message)
+    setTimeout(closeMessage, 3000);
+    play_btn.checked = false;
   }
 })
-const stat_id = Math.floor(Math.random() * 1000000000);
-const stat_data = [{
+let stat_id = Math.floor(Math.random() * 1000000000);
+let stat_data = [{
   id: stat_id,
   image: false,
   video: false,
@@ -29,6 +35,12 @@ const stat_data = [{
   started: false,
   complete: false,
 }];
+let alert_status = {
+  primary: "#info-fill",
+  success: "#check-circle-fill",
+  warning: "#exclamation-triangle-fill",
+  danger: "#exclamation-triangle-fill"
+}
 let steps = document.querySelectorAll(".step"),
   step_skip = document.querySelectorAll('.step-jump .btn');
 
@@ -78,7 +90,7 @@ function resetSteps() {
 
 // Function to go to a specific step
 function goToStep(n) {
-  if (n !== 4) {
+  if (n !== 3) {
     videoPreview.pause();
     play_btn.checked = false;
   }
@@ -90,6 +102,25 @@ function goToStep(n) {
   targetBtn.classList.add("active");
 }
 
+document.querySelector(".alert-close").addEventListener("click", closeMessage)
+
+function closeMessage() {
+  let message = document.querySelector(".message")
+  message.classList.remove("active");
+  message.classList.add('up-speed')
+}
+function openMessage(status = 'success', msg = "Votre video est publiée avec success") {
+  let message = document.querySelector(".message")
+  message.classList.remove('up-speed');
+  message.classList.add("active");
+  alert_container = message.querySelector(".alert")
+  alert_container.className = `alert alert-${status}`;
+  alert_container.innerHTML = `<svg class="alert-icon" fill="currentColor" height="30" width="50">
+                                <use xlink:href="${alert_status[status]}" />
+                              </svg>
+                              <div class="alert-message">${msg}</div>
+                              `
+}
 
 image_input.addEventListener("change", () => {
   if (image_input.value !== "") {
@@ -102,13 +133,12 @@ image_input.addEventListener("change", () => {
 function uploadVideo() {
   let formData = new FormData(form_v);
   formData.append("stat_id", stat_id);
-  xhreq.open("POST", "q/upload", true);
+  xhreq.open("POST", "upload.php", true);
   startTime = new Date().getTime();
   xhreq.addEventListener("load", () => {
     if (xhreq.status === 200) {
       try {
         var response = JSON.parse(xhreq.response);
-        console.log(response);
         if (response['video']) {
           stat_data[0].video = response.video;
           updateStat({
@@ -126,9 +156,13 @@ function uploadVideo() {
         }
       } catch (e) {
         console.error("Erreur lors du chargement de la vidéo : ", e);
+        let message = "Erreur lors du chargement de la vidéo"
+        openMessage("warning", message)
         console.warn(xhreq.response);
       }
     } else {
+      let message = "Erreur lors de l'envoi de la vidéo"
+      openMessage("warning", message)
       console.error("Erreur lors de l'envoi de la vidéo : ", xhreq.status);
     }
   });
@@ -149,6 +183,8 @@ video_input.addEventListener("change", () => {
       play_error = e.target.error.MEDIA_ERR_ABORTED == e.target.error ? true : false;
       // Définir une fonction à exécuter en cas d'erreur
       console.log("Une erreur s'est produite lors de la lecture de la vidéo");
+      let message = "Une erreur s'est produite lors de la lecture de la vidéo"
+      openMessage("warning", message)
       console.log(e); // Afficher l'objet d'erreur
       console.log(video.error.code); // Afficher le code d'erreur
       console.log(video.error.message); // Afficher le message d'erreur
@@ -159,7 +195,6 @@ video_input.addEventListener("change", () => {
   }
 });
 function processMedia(input, mediaType) {
-
   if (mediaType === "image") {
     if (input.value) {
       // Récupérer le fichier choisi
@@ -219,6 +254,39 @@ function processVideo(file) {
   });
 
 }
+pic_gen_btn.addEventListener("click", generatePicture)
+function generatePicture() {
+  if (stat_data[0].video !== false) {
+    if (stat_data[0].image !== false) {
+      // Créer un objet FormData avec les données à envoyer
+      let f_data = new FormData(),
+        video_url = "",
+        image_url = stat_data[0].image ? stat_data[0].image : "";
+      f_data.append("reset", "reset");
+      f_data.append("video_url", video_url);
+      f_data.append("image_url", image_url);
+      // Créer un objet XMLHttpRequest pour envoyer la requête
+      let xhreq = new XMLHttpRequest();
+      xhreq.open("POST", "upload.php");
+      xhreq.addEventListener("load", () => {
+        if (xhreq.status === 200) {
+          try {
+            var response = JSON.parse(xhreq.response);
+          } catch (e) {
+            console.warn(xhreq.response);
+          }
+        } else {
+          console.error("Erreur lors de l'envoi de la vidéo : ", xhreq.status);
+        }
+      });
+      xhreq.send(f_data);
+    }
+    processVideo(stat_data[0].video);
+  }else{
+    let message = "Vous devez d'abord publier une vidéo"
+    openMessage("warning", message)
+  }
+}
 
 function processCanvas(media, width, height) {
   media_width = media.width || media.videoWidth;
@@ -268,7 +336,7 @@ function processCanvas(media, width, height) {
     startTime = new Date().getTime();
 
     // Ouvrir la connexion avec le fichier PHP qui va traiter l'image
-    xhreq.open("POST", "q/upload");
+    xhreq.open("POST", "upload.php");
 
     // Envoyer la requête avec le formulaire contenant l'image
     xhreq.send(form);
@@ -285,14 +353,15 @@ function processCanvas(media, width, height) {
           });
           stat_data[0].image = json_data.image;
         } catch (e) {
-          alert("Erreur veuillez réessayer");
+          let message = "Nous avons rencontré une erreur inatendue";
+          openMessage("primary", message)
           console.error(e);
           console.log(xhreq.response);
-          document.getElementById("img-preview").src = "";
         }
       } else {
         // La requête a échoué, on affiche un message d'erreur
-        alert("Erreur : " + xhreq.status);
+        let message = "La requête a échoué";
+        openMessage("danger", message)
       }
     };
   }, "image/webp", 1);
@@ -331,6 +400,7 @@ xhreq.upload.addEventListener("progress", e => {
   }
 });
 
+
 cancel.addEventListener('click', () => {
   if (cancel_state) {
     xhreq.abort();
@@ -341,44 +411,14 @@ cancel.addEventListener('click', () => {
       cancel.value = "Fermer";
     }, 500);
     cancel_state = false;
+    let message = "Vous avez annulé une requête en progression";
+    openMessage("primary", message);
   } else {
     cancel.classList.remove('lite');
     cancel.value = "Annuler";
     cancel_state = true;
     uploading.classList.remove("active");
   }
-})
-form_v.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const titre = document.getElementById('titre'),
-    description = document.getElementById('description');
-  xhreq.open('POST', 'q/upload', true);
-  xhreq.addEventListener('load', () => {
-    if (xhreq.status === 200) {
-      try {
-        var response = JSON.parse(xhreq.response);
-        if (response.complete === true) {
-          stat_data[0].complete = true;
-          form.reset();
-          stat_data[0].started = false;
-          stat_data[0].complete = false;
-        }
-      } catch (e) {
-        console.error("Erreur lors de la reception des données : ", e);
-        console.warn(xhreq.response);
-      }
-    } else {
-      console.error("Erreur  : ", xhreq.status);
-    }
-  })
-  let formData = new FormData();
-  formData.append("submit", true);
-  formData.append("stat_id", stat_id);
-  formData.append("title", titre.value);
-  formData.append("desc", description.value);
-  formData.append("image", stat_data[0].image);
-  formData.append("video", stat_data[0].video);
-  xhreq.send(formData);
 })
 function updateStat(data) {
   document.getElementById('img-preview').src = data.image ? data.image : "";
@@ -428,7 +468,7 @@ window.addEventListener("beforeunload", (event) => {
       f_data.append("image_url", image_url);
       // Créer un objet XMLHttpRequest pour envoyer la requête
       let xhreq = new XMLHttpRequest();
-      xhreq.open("POST", "q/upload");
+      xhreq.open("POST", "upload.php");
       xhreq.addEventListener("load", () => {
         if (xhreq.status === 200) {
           try {
@@ -450,3 +490,51 @@ window.addEventListener("beforeunload", (event) => {
     }
   }
 });
+form_v.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const titre = document.getElementById('titre'),
+    description = document.getElementById('description');
+  xhreq.open('POST', 'upload.php', true);
+  xhreq.addEventListener('load', () => {
+    if (xhreq.status === 200) {
+      try {
+        var response = JSON.parse(xhreq.response);
+        if (response.complete === true) {
+          stat_data[0].complete = true;
+          updateStat({
+            image: false,
+            video: false,
+          });
+          form_v.reset();
+          stat_data[0].started = false;
+          stat_data[0].complete = false;
+          // La vidéo a éte bien publiée
+          let message = "Votre video a été publiée avec success";
+          openMessage("success", message)
+        }else{
+          // Erreur d'insertion dans la base de donnée
+          let message = "Une erreur est survenue pendant le traitement de votre publication";
+          openMessage("danger", message)
+        }
+      } catch (e) {
+        console.error("Erreur lors de la reception des données : ", e);
+        console.warn(xhreq.response); 
+        let message = "Une erreur est survenue pendant le traitement de votre publication";
+        openMessage("danger", message)
+      }
+    } else {
+      console.error("Erreur  : ", xhreq.status);
+      // La requête a échoué, on affiche un message d'erreur
+      let message = "La requête a échoué";
+      openMessage("danger", message)
+    }
+  })
+  let formData = new FormData();
+  formData.append("submit", true);
+  formData.append("stat_id", stat_id);
+  formData.append("title", titre.value);
+  formData.append("desc", description.value);
+  formData.append("image", stat_data[0].image);
+  formData.append("video", stat_data[0].video);
+  xhreq.send(formData);
+})

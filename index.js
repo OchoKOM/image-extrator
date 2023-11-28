@@ -506,6 +506,8 @@ form_v.addEventListener("submit", (e) => {
             video: false,
           });
           form_v.reset();
+          stat_data[0].image = false;
+          stat_data[0].video = false;
           stat_data[0].started = false;
           stat_data[0].complete = false;
           // La vidéo a éte bien publiée

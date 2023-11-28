@@ -14,8 +14,7 @@ try {
         `server` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         `location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         `created` TIMESTAMP NOT NULL,
-        PRIMARY KEY (`id`),
-        FOREIGN KEY (`stat_id`) REFERENCES `other_table`(`id`)
+        PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
         
         CREATE TABLE IF NOT EXISTS `video` (
@@ -29,15 +28,14 @@ try {
         `user_id` int NOT NULL,
         `vues` int NOT NULL DEFAULT '0',
         `date` TIMESTAMP NOT NULL,
-        PRIMARY KEY (`id`),
-        FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
+        PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;      
     ";
     
     // Exécuter le code SQL
     $bdd->exec($sql);
 } catch (PDOException $e) {
-    die("ERROR: Could not connect. " . $e->getMessage());
+    die("ERROR: " . $e->getMessage());
 }
 
 function generateRandomString($length = 15) {

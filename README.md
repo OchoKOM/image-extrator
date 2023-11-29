@@ -19,7 +19,7 @@ Ce dépôt contient un outil qui permet d'extraire des images à partir de vidé
     cd image-extrator
     ```
 3. Ouvrez votre navigateur web et accédez à l'URL de votre serveur local.
-4. creez une base des données MySQL pour le projet
+4. Creez une base des données MySQL pour le projet et créez un dossier pour les fichiers nommé 'uploads'
 5. Enfin modifiez le fichier de configuration pour correspondre au nom de votre base des données 
 
 ## Utilisation

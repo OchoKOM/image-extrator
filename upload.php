@@ -1,6 +1,6 @@
 <?php
 require('config.php');
-$server = "http://".$_SERVER['HTTP_HOST'];
+$server = "http://" . $_SERVER['HTTP_HOST'];
 $date = date("d-m-Y");
 $cookie_data = array(
     'id' => false,
@@ -10,12 +10,33 @@ $cookie_data = array(
     'video' => false,
     'complete' => false
 );
+$post_max_size = ini_get('post_max_size') ? formatSizeNumber(ini_get('post_max_size')) : 0;
+$upload_max_filesize = ini_get('upload_max_filesize') ? formatSizeNumber(ini_get('upload_max_filesize')) :  0;
+
+function formatSizeNumber($size){
+    if (gettype($size) == "string") {
+        return reverseFormatFileSize($size);
+    }
+    return $size;
+}
+
+function reverseFormatFileSize($formattedSize){
+    $units = array('B', 'k', 'M', 'G', 'T');
+    $unit = preg_replace('/[^a-zA-Z]/', '', $formattedSize);
+    $size = preg_replace('/[^0-9.]/', '', $formattedSize);
+    $i = array_search($unit, $units);
+    return $size * pow(1024, $i);
+}
+
+
 $stat_data = [
     'status' => true,
     'id' => false,
     'location' => false,
     'image' => false,
     'video' => false,
+    'post_size' => $post_max_size,
+    'file_size' => $upload_max_filesize,
 ];
 if (isset($_POST['reset'])) {
     if (!empty($_POST['video_url'])) {
@@ -36,7 +57,7 @@ if (isset($_POST['reset'])) {
     }
 }
 // Declarer la variable server et y stocker l'url du site
-$json_response = json_encode("");
+$json_response = json_encode($stat_data);
 $server = $_SERVER['HTTP_HOST'];
 if (isset($_POST['stat_id'])) {
     $stat_id = intval($_POST["stat_id"]);
@@ -80,8 +101,8 @@ if (isset($_POST['stat_id'])) {
             // Le fichier est de taille valide
             if (move_uploaded_file($fileTmpName, $uploadDir . $newFileName)) {
                 $stat_data['id'] = $stat_id;
-                $stat_data['video'] = "./uploads/videos/". $newFileName;
-                $stat_data['location'] = "./uploads/videos/". $newFileName;
+                $stat_data['video'] = "./uploads/videos/" . $newFileName;
+                $stat_data['location'] = "./uploads/videos/" . $newFileName;
                 $json_response = json_encode($stat_data);
             } else {
                 // Il y a eu une erreur lors du déplacement du fichier
@@ -91,6 +112,14 @@ if (isset($_POST['stat_id'])) {
     }
 }
 if (isset($_POST['submit'])) {
+    $uploaded_data = [
+        'status' => true,
+        'complete' => false,
+        'success' => false,
+        'message' => "Patientez...",
+        'post_size' => $post_max_size || 0,
+        'file_size' => $upload_max_filesize || 0,
+    ];
     $stat_id = intval($_POST["stat_id"]);
     $user_id = 1;
     if (isset($_POST['title']) && !empty(trim($_POST['title']))) {
@@ -135,25 +164,18 @@ if (isset($_POST['submit'])) {
             // Insert video details in the table video (titre, des, video_file, image_file, user_id, date)
             $video_details_query = "INSERT INTO video(id,titre, des, video_file, image_file,user_id, date) VALUES(?,?,?,?,?,?,?)";
             $video_details_sql = $bdd->prepare($video_details_query);
-            $video_details_sql->execute([generateRandomString(15),$title, $descript, $videos_id, $images_id, $user_id, $date]);
+            $video_details_sql->execute([generateRandomString(15), $title, $descript, $videos_id, $images_id, $user_id, $date]);
             if (isset($_COOKIE['data'])) {
                 foreach ($_COOKIE['data'] as $key => $value) {
                     setcookie("data[$key]", $value, time() - 3600);
                 }
             }
-            $uploaded_data = [
-                'status' => true,
-                'complete' => true,
-                'message' => "Votre video a été publiée avec success",
-            ];
+            $uploaded_data['complete'] = true;
+            $uploaded_data['success'] = true;
+            $uploaded_data['message'] = "Votre video a été publiée avec success";
             $json_response = json_encode($uploaded_data);
         } else {
-            $uploaded_data = [
-                'status' => true,
-                'complete' => false,
-                'success' => false,
-                'message' => "Echec de votre video n'a pu être publiée",
-            ];
+            $uploaded_data['message'] = "Votre video n'a pu être publiée veuillez réessayer";
             @unlink($stat_data['video']);
             @unlink($stat_data['image']);
             $json_response = json_encode($uploaded_data);

@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$db   = 'test';
+$db   = 'img';
 $user = 'root';
 $pass = '';
 try {

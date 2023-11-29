@@ -19,9 +19,9 @@ let form_v = document.getElementById("main-form"),
 play_btn.addEventListener("click", () => {
   if (videoPreview.src !== "") {
     play_btn.checked ? videoPreview.play() : videoPreview.pause();
-  }else{
+  } else {
     let message = "Vous devez d'abord charger une vidéo pour la lire.";
-    openMessage("warning",  message)
+    openMessage("warning", message)
     setTimeout(closeMessage, 3000);
     play_btn.checked = false;
   }
@@ -122,11 +122,13 @@ function openMessage(status = 'success', msg = "Votre video est publiée avec su
                               `
 }
 
-image_input.addEventListener("change", () => {
+image_input.addEventListener("change", async () => {
   if (image_input.value !== "") {
-    processMedia(image_input, "image");
-    stat_data[0].started = true;
-    stat_data[0].from_video = false;
+    if(await checkFileSize(image_input.files[0].size) !== false){
+      processMedia(image_input, "image");
+      stat_data[0].started = true;
+      stat_data[0].from_video = false;
+    };
   }
 });
 // Ajoutez cette fonction pour envoyer la vidéo à upload-video.php
@@ -170,27 +172,30 @@ function uploadVideo() {
 }
 
 // Modifiez votre gestionnaire d'événements pour appeler uploadVideo
-video_input.addEventListener("change", () => {
+video_input.addEventListener("change", async () => {
   if (video_input.value !== "") {
-    stat_data[0].started = true;
-    // Créer un élément video pour lire le fichier
-    let video = document.createElement("video"),
-      play_error = false;
-    // Définir la source de la vidéo avec l'URL temporaire du fichier
-    video.src = URL.createObjectURL(video_input.files[0]);
-
-    video.addEventListener('error', (e) => {
-      play_error = e.target.error.MEDIA_ERR_ABORTED == e.target.error ? true : false;
-      // Définir une fonction à exécuter en cas d'erreur
-      console.log("Une erreur s'est produite lors de la lecture de la vidéo");
-      let message = "Une erreur s'est produite lors de la lecture de la vidéo"
-      openMessage("warning", message)
-      console.log(e); // Afficher l'objet d'erreur
-      console.log(video.error.code); // Afficher le code d'erreur
-      console.log(video.error.message); // Afficher le message d'erreur
-    });
-    if (play_error === false) {
-      uploadVideo();
+    if (await checkFileSize(video_input.files[0].size) !== false) {
+      stat_data[0].started = true;
+      // Créer un élément video pour lire le fichier
+      let video = document.createElement("video"),
+        play_error = false;
+      // Définir la source de la vidéo avec l'URL temporaire du fichier
+      video.src = URL.createObjectURL(video_input.files[0]);
+      let message = "Chargement de la vidéo..."
+      openMessage("primary", message)
+      video.addEventListener('error', (e) => {
+        play_error = e.target.error.MEDIA_ERR_ABORTED == e.target.error ? true : false;
+        // Définir une fonction à exécuter en cas d'erreur
+        console.log("Une erreur s'est produite lors de la lecture de la vidéo");
+        let message = "Imposible de lire la video veuillez  réesayer"
+        openMessage("warning", message)
+        console.log(e); // Afficher l'objet d'erreur
+        console.log(video.error.code); // Afficher le code d'erreur
+        console.log(video.error.message); // Afficher le message d'erreur
+      });
+      if (play_error === false) {
+        uploadVideo();
+      }
     }
   }
 });
@@ -282,7 +287,7 @@ function generatePicture() {
       xhreq.send(f_data);
     }
     processVideo(stat_data[0].video);
-  }else{
+  } else {
     let message = "Vous devez d'abord publier une vidéo"
     openMessage("warning", message)
   }
@@ -366,6 +371,55 @@ function processCanvas(media, width, height) {
     };
   }, "image/webp", 1);
 }
+
+async function checkFileSize(size) {
+  let isValid = false;
+
+  let message = "Vérification de la taille du fichier...";
+  openMessage("primary", message)
+
+  try {
+    let response = await fetch("upload.php", {
+      method: "POST",
+      body: JSON.stringify({ size: size }),
+      headers: { "Content-Type": "application/json" }
+    });
+
+    if (response.ok) {
+      let data = await response.json();
+      let post_max_size = data.post_size;
+      let file_max_size = data.file_size;
+
+      if (size <= post_max_size && size <= file_max_size) {
+        let message = "Le fichier a une taille valide";
+        openMessage("primary", message);
+        setTimeout(closeMessage, 3000);
+        isValid = true;
+      } else {
+        if (size >= post_max_size) {
+          let message = "Le fichier ne doit pas dépaser " + formatFileSize(post_max_size);
+          openMessage("warning", message);
+        } else if (size >= file_max_size) {
+          let message = "Le fichier ne doit pas dépaser " + formatFileSize(file_max_size);
+          openMessage("warning", message);
+        } else {
+          console.log(data);
+        }
+      }
+    } else {
+      console.error("Erreur lors de l'envoi de la vidéo : ", response.status);
+      let message = "Echec lors de la vérification de la taille du fichier";
+      openMessage("danger", message);
+    }
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de la vidéo : ", error);
+    let message = "Echec lors de la vérification de la taille du fichier";
+    openMessage("danger", message);
+  }
+
+  return isValid;
+}
+
 
 // Ajouter un écouteur d'événement pour la progression du téléchargement
 xhreq.upload.addEventListener("progress", e => {
@@ -513,14 +567,14 @@ form_v.addEventListener("submit", (e) => {
           // La vidéo a éte bien publiée
           let message = "Votre video a été publiée avec success";
           openMessage("success", message)
-        }else{
+        } else {
           // Erreur d'insertion dans la base de donnée
           let message = "Une erreur est survenue pendant le traitement de votre publication";
           openMessage("danger", message)
         }
       } catch (e) {
         console.error("Erreur lors de la reception des données : ", e);
-        console.warn(xhreq.response); 
+        console.warn(xhreq.response);
         let message = "Une erreur est survenue pendant le traitement de votre publication";
         openMessage("danger", message)
       }

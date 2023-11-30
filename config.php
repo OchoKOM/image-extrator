@@ -13,7 +13,7 @@ try {
         `stat_id` int NOT NULL,
         `server` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         `location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-        `created` TIMESTAMP NOT NULL,
+        `created` int NOT NULL,
         PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
         
@@ -27,7 +27,7 @@ try {
         `image_file` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
         `user_id` int NOT NULL,
         `vues` int NOT NULL DEFAULT '0',
-        `date` TIMESTAMP NOT NULL,
+        `date` int NOT NULL,
         PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;      
     ";

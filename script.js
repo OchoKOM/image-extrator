@@ -27,11 +27,7 @@ video_overlay?.addEventListener("click", () => {
     video_settings_menu.classList.remove('active');
     video_settings_menu.removeAttribute('data-id')
 })
-// Fonction pour convertir une URL absolue en chemin relatif
-function absoluteToRelativePath(absoluteUrl) {
-    let url = new URL(absoluteUrl);
-    return "."+url.pathname;
-}
+
 function openMessage(status = 'primary', msg = "Les messages d'alerte seront affichés dans cette boite de dialogue") {
     let message = document.querySelector(".message")
     message.classList.remove('up-speed');
@@ -96,20 +92,13 @@ function toggleItems(video_id) {
                 xhr.send(form_data);
                 form.addEventListener("submit", (e) => {
                     let titre = form.querySelector("#titre").value.trim(),
-                    description = form.querySelector("#description").innerText.trim(),
-                    form_image = form.querySelector("#img-preview").src,
-                    image_input = form.querySelector("#image");
-                    // Utilisation de la fonction pour convertir 'form_image' en chemin relatif
-                    form_image = absoluteToRelativePath(form_image);
+                        description = form.querySelector("#description").value.trim(),
+                        form_image = form.querySelector("#img-src").value.trim();
                     let form_fields = {
                         title: titre,
                         description: description,
-                        thumbnail_url: form_image
-                    }, datas = {
-                        title: titre,
-                        description: description,
-                        thumbnail_url: image_input.files[0]
-                    };
+                        image: form_image
+                    }
                     e.preventDefault();
                     let message = "Confirmation des modifications...";
                     openMessage("primary", message);
@@ -123,18 +112,15 @@ function toggleItems(video_id) {
                                 let isDifferent = false;
                                 let form_data = new FormData();
                                 form_data.append('submit', true)
+                                form_data.append('video_id', form.id)
                                 for (let key in form_fields) {
                                     if (form_fields[key] !== video_data[key] &&
-                                        form_fields[key] !== "" &&
                                         typeof form_fields[key] !== "undefined") {
-                                        console.log(key);
-                                        form_data.append(key, datas[key]);
+                                        form_data.append(key, form_fields[key]);
                                         isDifferent = true;
                                     }
                                 }
-                                console.log(form_fields);
-                                console.log(video_data);
-                                return;
+                                
                                 if (isDifferent) {
                                     // Si des modifications ont été détectées, on envoie le FormData
                                     closeMessage();
@@ -142,12 +128,19 @@ function toggleItems(video_id) {
                                     uploadXhr.open("POST", "apis/update-video-data.php");
                                     uploadXhr.onload = function () {
                                         if (uploadXhr.status == 200) {
-                                            let successMessage = "Les modifications ont été enregistrées avec succès.";
-                                            openMessage("success", successMessage);
-                                            console.log(uploadXhr.response);
+                                            try {
+                                                let json_res = JSON.parse(this.response)
+                                                let successMessage = "Les modifications ont été enregistrées avec succès.";
+                                                openMessage("success", successMessage);
+                                                console.log(json_res);
+                                            } catch (e) {
+                                                let message = "Impossible d'enregistrer les modifications, veuillez réessayer.";
+                                                openMessage("warning", message);
+                                                console.log(uploadXhr.response);
+                                            }
                                         } else {
-                                            let errorMessage = "Echec de l'enregistrement des modifications, veuillez réessayer.";
-                                            openMessage("danger", errorMessage);
+                                            let message = "Echec de l'enregistrement des modifications, veuillez réessayer.";
+                                            openMessage("danger", message);
                                             console.error(uploadXhr.response);
                                         }
                                     };
@@ -155,7 +148,7 @@ function toggleItems(video_id) {
                                 } else {
                                     let message = "Aucune modification détectée.";
                                     openMessage("warning", message);
-                                    console.warn(uploadXhr.response);
+                                    console.warn(xhr.response);
                                 }
 
                             } catch (error) {
@@ -163,6 +156,7 @@ function toggleItems(video_id) {
                                 openMessage("warning", message);
                                 console.warn(error);
                                 console.warn(xhr.response);
+                                console.log(datas);
                             }
                         } else {
                             let message = "La requête a échoué";
@@ -447,10 +441,14 @@ function processCanvas(media, width, height, form) {
 
     // Convertir l'image en webp avec une qualité de 80%
     canvas.toBlob(blob => {
-        document.getElementById('img-preview').src = URL.createObjectURL(blob);
+        let source = URL.createObjectURL(blob)
+        document.getElementById('img-preview').src = source;
+        document.getElementById('img-src').setAttribute('value', source);
         // Créer un objet FormData pour envoyer le blob au serveur
         var form_data = new FormData();
-        form_data.append("image", blob);
+        form_data.append("submit", true);
+        form_data.append("video_id", form.id);
+        form_data.append("thumbnail_url", blob);
         // Obtenir l'heure de début
         startTime = new Date().getTime();
         // Déclarer la variable form qui contient l'élément form du document

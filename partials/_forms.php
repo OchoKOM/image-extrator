@@ -6,6 +6,7 @@
     $des = '';
     $video = '';
     $image = '';
+    $image_file = '';
     if (isset($_POST['video_id'])) {
         if (isset($_SESSION['auth'])) {
             $key = "auth";
@@ -19,6 +20,11 @@
                 $des = $fetch_video['des'];
                 $video = "file.php?id=".$fetch_video['video_file'];
                 $image = "file.php?id=".$fetch_video['image_file'];
+                // ? Get file urls
+                $get_img_file_query = $bdd->prepare('SELECT * FROM files WHERE id= ?');
+                $get_img_file_query->execute(array($fetch_video['image_file']));
+                $get_img_file = $get_img_file_query->fetch();
+                $image_file = $get_img_file['location'];
             }
         }
     }
@@ -86,6 +92,7 @@
                     <input type="file" id="image" accept="image/*" name="image" class="input-field">
                     Parcourir
                 </label>
+                <input type="text" id="img-src" style="display:none;" value="'.$image_file.'">
             </div>
             <br>
             <input value="Précédent" class="btn lite" type="button"  data-prev-step="4">

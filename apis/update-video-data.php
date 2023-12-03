@@ -1,20 +1,22 @@
 <?php
 require('../config.php');
-!is_dir("uploads/") ? mkdir("uploads/") : null;
+!is_dir("../uploads/") ? mkdir("uploads/") : null;
 $server = "http://" . $_SERVER['HTTP_HOST'];
 $date = date("d-m-Y");
 
 $post_max_size = ini_get('post_max_size') ? formatSizeNumber(ini_get('post_max_size')) : 0;
 $upload_max_filesize = ini_get('upload_max_filesize') ? formatSizeNumber(ini_get('upload_max_filesize')) :  0;
 
-function formatSizeNumber($size){
+function formatSizeNumber($size)
+{
     if (gettype($size) == "string") {
         return reverseFormatFileSize($size);
     }
     return $size;
 }
 
-function reverseFormatFileSize($formattedSize){
+function reverseFormatFileSize($formattedSize)
+{
     $units = array('B', 'k', 'M', 'G', 'T');
     $unit = preg_replace('/[^a-zA-Z]/', '', $formattedSize);
     $size = preg_replace('/[^0-9.]/', '', $formattedSize);
@@ -23,11 +25,9 @@ function reverseFormatFileSize($formattedSize){
 }
 
 $stat_data = [
-    'status' => true,
-    'id' => false,
-    'location' => false,
+    'success' => false,
     'image' => false,
-    'video' => false,
+    'message' => false,
     'post_size' => $post_max_size,
     'file_size' => $upload_max_filesize,
 ];
@@ -58,7 +58,65 @@ $server = $_SERVER['HTTP_HOST'];
     }
 } */
 if (isset($_POST['submit'])) {
-    $stat_data['status'] = "Ok";
+    if (isset($_POST['video_id'])) {
+        $check_video = $bdd->prepare('SELECT * FROM video WHERE id = ? AND user_id = ? LIMIT 1');
+        $check_video->execute([$_POST['video_id'], $_SESSION['id']]);
+        $rowcount = $check_video->rowCount();
+        if ($rowcount == 1) {
+            $old_data = $check_video->fetch();
+            if (isset($_POST['title'])) {
+                try {
+                    $edit_title =  htmlspecialchars($_POST['title']);
+                    $update_title = $bdd->prepare('UPDATE video SET titre = ? WHERE user_id = ? AND id = ?');
+                    $update_title->execute([$edit_title, $_SESSION['id'], $_POST['video_id']]);
+                    $stat_data['success'] = true;
+                } catch (Exception $e) {
+                    $stat_data['message'] = "Erreur" . $e;
+                }
+            }
+            if (isset($_POST['description'])) {
+                try {
+                    $edit_description =  htmlspecialchars($_POST['description']);
+                    $update_description = $bdd->prepare('UPDATE video SET des = ? WHERE user_id = ? AND id = ?');
+                    $update_description->execute([$edit_description, $_SESSION['id'], $_POST['video_id']]);
+                    $stat_data['success'] = true;
+                } catch (Exception $e) {
+                    $stat_data['message'] = "Erreur" . $e;
+                }
+            }
+            if (isset($_FILES['thumbnail_url'])) {
+                $file_name = $_FILES['thumbnail_url']['name'];
+                $file_type = $_FILES['thumbnail_url']['type'];
+                $file_size = $_FILES['thumbnail_url']['size'];
+                $file_tmp_name = $_FILES['thumbnail_url']['tmp_name'];
+                $max_file_size = $post_max_size > $upload_max_filesize ? $upload_max_filesize : $post_max_size;
+                $upload_dir = "../uploads/vignettes/";
+                !is_dir($upload_dir) ? mkdir($upload_dir) : null;
+                $new_file_name = time() . "-" . uniqid() . ".webp";
+
+
+                // Vérifier si la taille du fichier est inférieure à la taille maximale autorisée
+                if ($file_size < $max_file_size) {
+                    if (move_uploaded_file($file_tmp_name, $upload_dir . $new_file_name)) {
+                        try {
+                            $get_old_thumbnail = $bdd->prepare('SELECT * FROM files WHERE id = ? LIMIT 1');
+                            $get_old_thumbnail->execute([$old_data['image_file']]);
+                            $old_thumbnail = "." . $get_old_thumbnail->fetch()['location'];
+                            @unlink($old_thumbnail);
+                            $edit_thumbnail =  htmlspecialchars("./uploads/vignettes/" . $new_file_name);
+                            $update_thumbnail = $bdd->prepare('UPDATE files SET location = ? WHERE id = ?');
+                            $update_thumbnail->execute([$edit_thumbnail, $old_data['image_file']]);
+                            $stat_data['success'] = true;
+                        } catch (Exception $e) {
+                            $stat_data['message'] = "Erreur : " . $e->getMessage();
+                        }
+                    }
+                }else {
+                    $stat_data['message'] = "La taille du fichier dépasse la limite autorisée.";
+                }
+            }
+        }
+    }
     /* $uploaded_data = [
         'status' => true,
         'complete' => false,

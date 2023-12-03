@@ -33,6 +33,7 @@
         'description' => $des,
         'video_url' => $video_file,
         'thumbnail_url' => $image_file,
+        'image' => $image_file,
     ];
 
 echo json_encode($video_data_array);

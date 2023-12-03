@@ -27,7 +27,11 @@ video_overlay?.addEventListener("click", () => {
     video_settings_menu.classList.remove('active');
     video_settings_menu.removeAttribute('data-id')
 })
-
+// Fonction pour convertir une URL absolue en chemin relatif
+function absoluteToRelativePath(absoluteUrl) {
+    let url = new URL(absoluteUrl);
+    return "."+url.pathname;
+}
 function openMessage(status = 'primary', msg = "Les messages d'alerte seront affichés dans cette boite de dialogue") {
     let message = document.querySelector(".message")
     message.classList.remove('up-speed');
@@ -90,9 +94,84 @@ function toggleItems(video_id) {
                     }
                 }
                 xhr.send(form_data);
-                form.addEventListener("submit", (e)=>{
+                form.addEventListener("submit", (e) => {
+                    let titre = form.querySelector("#titre").value.trim(),
+                    description = form.querySelector("#description").innerText.trim(),
+                    form_image = form.querySelector("#img-preview").src,
+                    image_input = form.querySelector("#image");
+                    // Utilisation de la fonction pour convertir 'form_image' en chemin relatif
+                    form_image = absoluteToRelativePath(form_image);
+                    let form_fields = {
+                        title: titre,
+                        description: description,
+                        thumbnail_url: form_image
+                    }, datas = {
+                        title: titre,
+                        description: description,
+                        thumbnail_url: image_input.files[0]
+                    };
                     e.preventDefault();
-                })
+                    let message = "Confirmation des modifications...";
+                    openMessage("primary", message);
+                    let xhr = new XMLHttpRequest();
+                    xhr.open("GET", "apis/get-video-data.php?id=" + form.id);
+                    xhr.responseType = "json";
+                    xhr.onload = function () {
+                        if (xhr.status == 200) {
+                            try {
+                                let video_data = xhr.response;
+                                let isDifferent = false;
+                                let form_data = new FormData();
+                                form_data.append('submit', true)
+                                for (let key in form_fields) {
+                                    if (form_fields[key] !== video_data[key] &&
+                                        form_fields[key] !== "" &&
+                                        typeof form_fields[key] !== "undefined") {
+                                        console.log(key);
+                                        form_data.append(key, datas[key]);
+                                        isDifferent = true;
+                                    }
+                                }
+                                console.log(form_fields);
+                                console.log(video_data);
+                                return;
+                                if (isDifferent) {
+                                    // Si des modifications ont été détectées, on envoie le FormData
+                                    closeMessage();
+                                    let uploadXhr = new XMLHttpRequest();
+                                    uploadXhr.open("POST", "apis/update-video-data.php");
+                                    uploadXhr.onload = function () {
+                                        if (uploadXhr.status == 200) {
+                                            let successMessage = "Les modifications ont été enregistrées avec succès.";
+                                            openMessage("success", successMessage);
+                                            console.log(uploadXhr.response);
+                                        } else {
+                                            let errorMessage = "Echec de l'enregistrement des modifications, veuillez réessayer.";
+                                            openMessage("danger", errorMessage);
+                                            console.error(uploadXhr.response);
+                                        }
+                                    };
+                                    uploadXhr.send(form_data);
+                                } else {
+                                    let message = "Aucune modification détectée.";
+                                    openMessage("warning", message);
+                                    console.warn(uploadXhr.response);
+                                }
+
+                            } catch (error) {
+                                let message = "Echec de l'enregistrement des modifications veuillez réessayer";
+                                openMessage("warning", message);
+                                console.warn(error);
+                                console.warn(xhr.response);
+                            }
+                        } else {
+                            let message = "La requête a échoué";
+                            openMessage("danger", message);
+                        }
+                    };
+                    xhr.send();
+                });
+
             } else {
                 let action = item.getAttribute("data-action");
                 // doAction(action);
@@ -121,7 +200,7 @@ function formFunction(form) {
     image_input.addEventListener("change", async () => {
         if (image_input.value !== "") {
             if (await checkFileSize(image_input.files[0].size) !== false) {
-                processImage(image_input.files[0] ,form);
+                processImage(image_input.files[0], form);
             };
         }
     });
@@ -206,7 +285,7 @@ async function checkFileSize(size) {
     openMessage("primary", message)
 
     try {
-        let response = await fetch("edit-video.php", {
+        let response = await fetch("apis/update-video-data.php", {
             method: "POST",
             body: JSON.stringify({ size: size }),
             headers: { "Content-Type": "application/json" }
@@ -376,10 +455,9 @@ function processCanvas(media, width, height, form) {
         startTime = new Date().getTime();
         // Déclarer la variable form qui contient l'élément form du document
         form.addEventListener("submit", (e) => {
-            console.log(e);
             let xhreq = new XMLHttpRequest();
             // Ouvrir la connexion avec le fichier PHP qui va traiter l'image
-            xhreq.open("POST", "edit-video.php");
+            xhreq.open("POST", "apis/update-video-data.php");
 
             // Envoyer la requête avec le formulaire contenant l'image
             xhreq.send(form_data);

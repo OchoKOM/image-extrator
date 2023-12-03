@@ -1,5 +1,5 @@
 <?php
-require('config.php');
+require('../config.php');
 !is_dir("uploads/") ? mkdir("uploads/") : null;
 $server = "http://" . $_SERVER['HTTP_HOST'];
 $date = date("d-m-Y");
@@ -33,7 +33,6 @@ $stat_data = [
 ];
 
 // Declarer la variable server et y stocker l'url du site
-$json_response = json_encode($stat_data);
 $server = $_SERVER['HTTP_HOST'];
 /* if (isset($_POST['video_id'])) {
     $video_id = intval($_POST["video_id"]);
@@ -59,6 +58,7 @@ $server = $_SERVER['HTTP_HOST'];
     }
 } */
 if (isset($_POST['submit'])) {
+    $stat_data['status'] = "Ok";
     /* $uploaded_data = [
         'status' => true,
         'complete' => false,
@@ -75,7 +75,7 @@ if (isset($_POST['submit'])) {
     if (isset($_POST['description']) && !empty(trim($_POST['description']))) {
         $cookie_data['desc'] = trim($_POST['description']);
     }
-
+    
     foreach ($cookie_data as $key => $value) {
         setcookie("data[$key]", $value, time() + 2 * 3600);
     }
@@ -90,16 +90,16 @@ if (isset($_POST['submit'])) {
         $image = $_POST['image'];
         $video = $_POST['video'];
         $date = time();
-
+        
         // Insert files in the database
         $video_file_query = "INSERT INTO files(video_id, server, location, created) VALUES (?, ?, ?, ?)";
         $video_file_sql = $bdd->prepare($video_file_query);
         $video_file_sql->execute([$video_id, $server, $video, $date]);
-
+        
         $image_file_query = "INSERT INTO files(video_id, server, location, created) VALUES (?,?,?,?)";
         $image_file_sql = $bdd->prepare($image_file_query);
         $image_file_sql->execute([$video_id, $server, $image, $date]);
-
+        
         // Get id of files
         $get_files_id_query = "SELECT id FROM files WHERE video_id=? AND server=? ORDER BY created DESC";
         $get_files_id_sql = $bdd->prepare($get_files_id_query);
@@ -129,4 +129,5 @@ if (isset($_POST['submit'])) {
         }
     } */
 }
+$json_response = json_encode($stat_data);
 echo $json_response;

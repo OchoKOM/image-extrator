@@ -35,7 +35,7 @@ $_SESSION['id'] = 1
         </div>
         <div class="m-section-list chanel">
             <?php
-            $fetchVideos = $bdd->prepare('SELECT video.id AS video_id, profil.id AS profil_id, pseudo, titre, image_file, duration, date FROM video JOIN profil ON video.user_id = profil.id WHERE profil.id = ? ORDER BY date DESC LIMIT 100');
+            $fetchVideos = $bdd->prepare('SELECT video.id AS video_id, profil.id AS profil_id, pseudo, titre, image_file,  date FROM video JOIN profil ON video.user_id = profil.id WHERE profil.id = ? ORDER BY date DESC LIMIT 100');
             $fetchVideos->execute([$_SESSION['id']]);
             if ($fetchVideos->rowcount() == 0) {
             ?>

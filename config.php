@@ -22,11 +22,8 @@ try {
         `titre` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_520_ci NOT NULL,
         `des` varchar(5000) COLLATE utf8mb4_general_ci NOT NULL,
         `video_file` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
-        `duration` int NOT NULL,
-        `quality` int NOT NULL,
         `image_file` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
         `user_id` int NOT NULL,
-        `vues` int NOT NULL DEFAULT '0',
         `date` int NOT NULL,
         PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;      

@@ -548,18 +548,18 @@ form_v.addEventListener("submit", (e) => {
   e.preventDefault();
   const titre = document.getElementById('titre'),
     description = document.getElementById('description');
-  xhreq.open('POST', 'upload.php', true);
-  xhreq.addEventListener('load', () => {
-    if (xhreq.status === 200) {
-      try {
-        var response = JSON.parse(xhreq.response);
-        if (response.complete === true) {
-          stat_data[0].complete = true;
-          updateStat({
-            image: false,
-            video: false,
-          });
-          form_v.reset();
+    xhreq.open('POST', 'upload.php', true);
+    xhreq.addEventListener('load', () => {
+      if (xhreq.status === 200) {
+        try {
+          var response = JSON.parse(xhreq.response);
+          if (response.complete === true) {
+            stat_data[0].complete = true;
+            updateStat({
+              image: false,
+              video: false,
+            });
+            form_v.reset();
           stat_data[0].image = false;
           stat_data[0].video = false;
           stat_data[0].started = false;

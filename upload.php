@@ -1,5 +1,6 @@
 <?php
 require('config.php');
+!is_dir("uploads/") ? mkdir("uploads/") : null;
 $server = "http://" . $_SERVER['HTTP_HOST'];
 $date = date("d-m-Y");
 $cookie_data = array(
@@ -138,8 +139,8 @@ if (isset($_POST['submit'])) {
         }
     }
     if (isset($_POST['video']) && isset($_POST['image'])) {
-        $title = trim($_POST['title']);
-        $descript = trim($_POST['desc']);
+        $title = trim(htmlspecialchars($_POST['title']));
+        $descript = trim(htmlspecialchars($_POST['desc']));
         $image = $_POST['image'];
         $video = $_POST['video'];
         $date = time();
@@ -172,7 +173,7 @@ if (isset($_POST['submit'])) {
             }
             $uploaded_data['complete'] = true;
             $uploaded_data['success'] = true;
-            $uploaded_data['message'] = "Votre video a été publiée avec success";
+            $uploaded_data['message'] = "Success";
             $json_response = json_encode($uploaded_data);
         } else {
             $uploaded_data['message'] = "Votre video n'a pu être publiée veuillez réessayer";
